@@ -25,6 +25,11 @@ public class UDeployRestHelper {
     static final def String CREATE_COMPONENT_ENV_DEF = '/property/propSheetDef'
     static final def String SET_COMPONENT_ENVIRONMENT_PROP = '/cli/componentEnvironmentMapping/propValue'
     static final def String GET_COMPONENT_ENVIRONMENT_PROPS = '/cli/componentEnvironmentMapping/getProperties'
+    static final def String SET_RESOURCE_PROP = '/cli/resource/setProperty'
+    static final def String GET_RESOURCE_PROP = '/cli/resource/getProperty'
+    static final def String GET_RESOURCES = '/cli/resource'
+    static final def String GET_COMPONENTS = '/cli/component'
+    static final def String GET_COMPONENTS_IN_APPLICATION = '/cli/application/componentsInApplication'
 
     static private def http
 
@@ -175,6 +180,26 @@ public class UDeployRestHelper {
                     }
                     else if (resp.status == 400) {
                         throw new Exception("Cannot write to component $component!")
+                    }
+                    else {
+                        throw new Exception(resp.statusLine.toString())
+                    }
+                }
+            }
+        }
+    }
+
+    public def setResourceProp = { resource, name, value ->
+        if (resource && name) {
+            getBuilder().request(Method.PUT) {
+                uri.path = SET_RESOURCE_PROP
+                uri.query = [name: name, value: value, resource: resource]
+                response.failure = { resp ->
+                    if (resp.status == 404) {
+                        throw new Exception("Resource $resource not found!")
+                    }
+                    else if (resp.status == 400) {
+                        throw new Exception("Cannot write to resource $resource!")
                     }
                     else {
                         throw new Exception(resp.statusLine.toString())
@@ -384,6 +409,36 @@ public class UDeployRestHelper {
         return result
     }
 
+    public def getResourceProperty = { resource, propName ->
+        def result
+        if (resource && propName) {
+
+            getBuilder().request(Method.GET) {
+                uri.path = GET_RESOURCE_PROP
+                uri.query = [name: propName, resource: resource]
+                response.failure = { resp ->
+                    if (resp.status == 404) {
+                        if (resp.getEntity().getContent().getText().startsWith('Property')) {
+                            // no property, return null for value
+                        }
+                        else {
+                            throw new Exception("Resource $resource does not exist!")
+                        }
+                    }
+                    else {
+                        throw new Exception(resp.statusLine.toString())
+                    }
+                }
+
+                response.success = { resp ->
+                    result = resp.getEntity().getContent().getText().trim()
+                }
+            }
+        }
+
+        return result
+    }
+
     public def getComponentEnvProperties = { application, environment, component ->
         def result = [:] as Map
         if (application && environment && component) {
@@ -434,5 +489,73 @@ public class UDeployRestHelper {
         return result
     }
 
+    public def getResourceList = {
+        def result = [] as Set
+        getBuilder().request(Method.GET) {
+            uri.path = GET_RESOURCES
+            response.failure = { resp ->
+                if (resp.status == 400) {
+                    throw new Exception("You do not have permissions to view system properties")
+                }
+                else {
+                    throw new Exception(resp.statusLine.toString())
+                }
+            }
 
+            response.success = { resp, json ->
+                json.each {
+                    result << it.name
+                }
+            }
+        }
+
+        return result
+    }
+
+    public def getComponentList = {
+        def result = [:] as Map
+        getBuilder().request(Method.GET) {
+            uri.path = GET_COMPONENTS
+            response.failure = { resp ->
+                if (resp.status == 400) {
+                    throw new Exception("You do not have permissions to view components")
+                }
+                else {
+                    throw new Exception(resp.statusLine.toString())
+                }
+            }
+
+            response.success = { resp, json ->
+                json.each {
+                    result[it.name] = it.id
+                }
+            }
+        }
+
+        return result
+    }
+
+    public def getComponentInApplicationList = { application ->
+        def result = [:] as Map
+        getBuilder().request(Method.GET) {
+            uri.path = GET_COMPONENTS_IN_APPLICATION
+            uri.query = [application: application]
+            response.failure = { resp ->
+                if (resp.status == 400) {
+                    throw new Exception("You do not have permissions to application $application")
+                }
+                else {
+                    throw new Exception(resp.statusLine.toString())
+                }
+            }
+
+            response.success = { resp, json ->
+                json.each {
+                    result[it.name] = it.id
+                }
+            }
+        }
+
+        return result
+    }
 }
