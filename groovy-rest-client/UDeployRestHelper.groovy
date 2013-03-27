@@ -23,6 +23,8 @@ public class UDeployRestHelper {
     static final def String SET_COMPONENT_PROP = '/cli/component/propValue'
     static final def String GET_COMPONENT_PROPS = '/cli/component/getProperties'
     static final def String CREATE_COMPONENT_ENV_DEF = '/property/propSheetDef'
+    static final def String CREATE_COMPONENT = '/cli/component/create'
+    static final def String UPDATE_COMPONENT = '/rest/deploy/component'
     static final def String SET_COMPONENT_ENVIRONMENT_PROP = '/cli/componentEnvironmentMapping/propValue'
     static final def String GET_COMPONENT_ENVIRONMENT_PROPS = '/cli/componentEnvironmentMapping/getProperties'
     static final def String SET_RESOURCE_PROP = '/cli/resource/setProperty'
@@ -237,6 +239,56 @@ public class UDeployRestHelper {
                     }
                 }
                 
+                response.success = { resp, json ->
+                    return json
+                }
+            }
+        }
+    }
+
+    public def createComponent = { input ->
+        if (input != null) {
+            getBuilder().request(Method.PUT) {
+                requestContentType = ContentType.JSON
+                uri.path = CREATE_COMPONENT
+                body = input
+                response.failure = { resp ->
+                    if (resp.status == 500 ) {
+                        throw new Exception("Component already exists!")
+                    }
+                    else if (resp.status == 400) {
+                        throw new Exception("Cannot create component!")
+                    }
+                    else {
+                        throw new Exception(resp.statusLine.toString())
+                    }
+                }
+
+                response.success = { resp, json ->
+                    return json
+                }
+            }
+        }
+    }
+
+    public def updateComponent = { input ->
+        if (input != null) {
+            getBuilder().request(Method.PUT) {
+                requestContentType = ContentType.JSON
+                uri.path = UPDATE_COMPONENT
+                body = input
+                response.failure = { resp ->
+                    if (resp.status == 500 ) {
+                        throw new Exception("Component does not exist!")
+                    }
+                    else if (resp.status == 400) {
+                        throw new Exception("Cannot update component!")
+                    }
+                    else {
+                        throw new Exception(resp.statusLine.toString())
+                    }
+                }
+
                 response.success = { resp, json ->
                     return json
                 }
