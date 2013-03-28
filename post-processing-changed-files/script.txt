@@ -1,0 +1,20 @@
+if (properties.get("exitCode") != 0) {
+   properties.put(new java.lang.String("Status"), new java.lang.String("Failure"));
+}
+else {
+   properties.put("Status", "Success");
+}
+
+scanner.register("Downloading file .*", function(lineNumber, line) {
+   line = line.substring("Downloading file '".length);
+   line = line.substring(0, line.length-1)
+
+   var changedFiles = properties.get("changedFiles");
+   if (changedFiles == null) {
+       changedFiles = "";
+   }
+
+   changedFiles = changedFiles+line+"\n";
+   properties.put("changedFiles", changedFiles);
+});
+scanner.scan();
