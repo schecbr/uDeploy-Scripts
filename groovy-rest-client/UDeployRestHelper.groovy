@@ -32,6 +32,7 @@ public class UDeployRestHelper {
     static final def String GET_RESOURCES = '/cli/resource'
     static final def String GET_COMPONENTS = '/cli/component'
     static final def String GET_COMPONENTS_IN_APPLICATION = '/cli/application/componentsInApplication'
+    static final def String GET_ENVS_IN_APPLICATION = '/cli/application/environmentsInApplication'
 
     static private def http
 
@@ -151,11 +152,11 @@ public class UDeployRestHelper {
         }
     }
 
-    public def setEnvironmentProp = { application, environment, name, value ->
+    public def setEnvironmentProp = { application, environment, name, value, isSecure ->
         if (application && environment && name) {
             getBuilder().request(Method.PUT) {
                 uri.path = SET_ENV_PROP
-                uri.query = [name: name, value: value, application: application, environment: environment]
+                uri.query = [name: name, value: value, application: application, environment: environment, isSecure:isSecure]
                 response.failure = { resp ->
                     if (resp.status == 404) {
                         throw new Exception("Application $application not found!")
@@ -591,6 +592,30 @@ public class UDeployRestHelper {
         def result = [:] as Map
         getBuilder().request(Method.GET) {
             uri.path = GET_COMPONENTS_IN_APPLICATION
+            uri.query = [application: application]
+            response.failure = { resp ->
+                if (resp.status == 400) {
+                    throw new Exception("You do not have permissions to application $application")
+                }
+                else {
+                    throw new Exception(resp.statusLine.toString())
+                }
+            }
+
+            response.success = { resp, json ->
+                json.each {
+                    result[it.name] = it.id
+                }
+            }
+        }
+
+        return result
+    }
+
+    public def getEnvironmentInApplicationList = { application ->
+        def result = [:] as Map
+        getBuilder().request(Method.GET) {
+            uri.path = GET_ENVS_IN_APPLICATION
             uri.query = [application: application]
             response.failure = { resp ->
                 if (resp.status == 400) {
