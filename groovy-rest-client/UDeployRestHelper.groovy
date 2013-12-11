@@ -49,10 +49,12 @@ public class UDeployRestHelper {
     private def getBuilder = {
         if (!http) {
             http = new HTTPBuilder(serverUrl)
+	    http.auth.basic user, password
 
             http.client.addRequestInterceptor(new HttpRequestInterceptor() {
                 void process(HttpRequest httpRequest, HttpContext httpContext) {
-                    httpRequest.addHeader('Authorization', 'Basic ' + "$user:$password".toString().bytes.encodeBase64().toString())
+//                    httpRequest.addHeader('Authorization', 'Basic ' + "$user:$password".toString().bytes.encodeBase64().toString())
+                    httpRequest.addHeader('User-Agent', 'HTTPClient')
                 }
             })
 
